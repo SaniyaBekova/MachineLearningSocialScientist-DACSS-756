@@ -1,0 +1,402 @@
+---
+title: "Tree-based methods"
+author: "Saniya Bekova"
+date: "12/01/2024"
+format: 
+  pdf:
+    code-line-wrap: true
+    listing-options:
+      breaklines: true
+      breakatwhitespace: true
+      frame: single
+editor: source
+---
+
+## 1.1. Variable choice
+
+From previous assignment bonus task, Lasso left these variables: hh_income, acres_plots, bicycles, basic_cell_phones,yrs_in_mkt, profit, customers_pr_day
+
+I will add some categorical variables with few levels:
+
+female with 2 levels, married with 2 levels, pay_even_disagree with 2 levels
+
+## Importing libraries and loading data
+
+```{r load data and split train/test}
+#| message: false
+#| warning: false
+# Loading necessary libraries 
+library(dplyr)
+library(tidymodels)
+
+# Loading dataset
+load("data/vendor_data.RData")
+
+vendor_data <- vendor_data |>
+  mutate(
+         recent_receipt_7 = as.factor(recent_receipt_7),
+         female = as.factor(female),
+         married = as.factor(married),
+         pay_even_disagree = as.factor(pay_even_disagree))
+str(vendor_data)
+summary(vendor_data)
+
+selected_vendor_data <- vendor_data |>
+  select(hh_income, acres_plots, bicycles, 
+         basic_cell_phones,yrs_in_mkt,  profit, 
+         customers_pr_day, female, married, 
+         pay_even_disagree, test, recent_receipt_7)
+```
+
+## Splitting train/test data
+
+```{r test/train data}
+#| warning: false
+#| message: false
+train_data <- selected_vendor_data |>
+  filter(test == 0) |>
+  select(-test)
+
+test_data <- selected_vendor_data |>
+  filter(test == 1) |>
+  select(-test)
+```
+
+## 1.2.1. Gradient Boosting
+
+step_naomit(recent_receipt_7) - drops `NA` values from our outcome, `recent_receipt_7`
+
+step_upsample(recent_receipt_7) - to balance the outcome `recent_receipt_7`
+
+step_impute_mean - to replace NA's from all numeric features with their mean value
+
+step_impute_mode - to replace NA's from all categorical features with their mode value
+
+```{r}
+#| message: false
+#| warning: false
+library(tidymodels)
+library(bonsai) 
+library(themis) 
+
+vendor_data_rec <- recipe(recent_receipt_7 ~ ., data = train_data) |> 
+  step_naomit(recent_receipt_7) |> 
+  step_upsample(recent_receipt_7) |>
+  step_impute_mean(all_numeric(), -all_outcomes()) |> 
+  step_impute_mode(all_nominal(), -all_outcomes()) 
+  
+
+
+boost_vendor <- boost_tree(mode = "classification",
+                          engine = "lightgbm",
+                          # B
+                          trees = tune(),
+                          # d
+                          tree_depth = tune(),
+                          # lambda
+                          learn_rate = tune()) 
+
+
+boost_wf <- workflow() |>
+  add_recipe(vendor_data_rec) |>
+  add_model(boost_vendor)
+```
+
+## Grid-Search Cross-Validation
+
+Used trees from 500 to 3000 by 500. This range lets the model try smaller numbers of trees for quicker training and larger numbers for better accuracy, covering a good middle ground
+
+tree_depth - depth controls how detailed each tree can get; shallow trees are simple and fast, while deeper ones can capture more complexity without going overboard
+
+learn_rate (0.01, 0.05, 0.1).Learning rate affects how quickly the model adjusts; smaller values are careful but slow, and larger ones are faster but risk missing details, so these options balance it out.
+
+```{r cv-r}
+#| eval: false
+#| echo: fenced
+
+boost_grid <- crossing(
+ trees =  seq(500, 3000, by = 500),
+ tree_depth = 1:5,
+ learn_rate = c(0.01, 0.05, 0.1)
+)
+
+folds <- vfold_cv(train_data,
+               v = 6)
+
+f_meas_sec_level <- metric_tweak("f_meas_sec_level", f_meas,
+                                 event_level = "second")
+
+boost_cv_vendor <- tune_grid(boost_wf,
+                      resamples = folds,
+                      grid = boost_grid,
+                      metrics = metric_set(f_meas_sec_level)
+                      )
+save(boost_cv_vendor, file = "data/vendor_boost_cv_out.RData")
+```
+
+```{r load-cv-r}
+#| eval: true
+#| echo: fenced
+
+load(file = "data/vendor_boost_cv_out.RData")
+```
+
+```{r eval-cv-r}
+collect_metrics(boost_cv_vendor) |> 
+  arrange(desc(mean))
+```
+
+```{r refit-r}
+#| eval: false
+#| echo: fenced
+boost_wf_best <- boost_wf |> 
+  finalize_workflow(select_best(boost_cv_vendor, metric = "f_meas_sec_level")) |> 
+  fit(train_data)
+```
+
+```{r eval-mod-r}
+#| eval: false
+#| echo: fenced
+vendor_test_aug <- boost_wf_best |> 
+  augment(new_data = test_data)
+
+vendor_test_aug |> 
+  f_meas(recent_receipt_7,
+         .pred_class,
+         event_level = "second")
+
+vendor_test_aug |> 
+  conf_mat(recent_receipt_7,
+           .pred_class)
+```
+
+The F1 score of the model is 0.385. Gradient Boosting did not perform well.
+
+## Iterative Search Cross-Validation(For Bonus Point)
+
+`trees(range = c(1000, 3000))`. The model tries between 1000 and 3000 trees to balance accuracy and training time. Fewer trees train faster, and more trees can capture complex patterns.
+
+`iter = 100`. The model tests 100 different combinations of parameters.
+
+```{r cv-bayes-r}
+#| eval: false
+#| echo: fenced
+
+boost_params <- extract_parameter_set_dials(boost_wf)
+
+boost_params <- boost_params |> 
+  update(trees = trees(range = c(1000, 3000)))
+
+set.seed(756)
+boost_cv_bayes_vendor <- boost_wf |> 
+  tune_bayes(
+    resamples = folds,
+    param_info = boost_params,
+    initial = boost_cv_vendor,
+    iter = 100,
+    metrics = metric_set(f_meas_sec_level),
+    control = control_bayes(no_improve = 15)
+  )
+
+save(boost_cv_bayes_vendor, file = "data/vendor_boost_cv_bayes_out.RData")
+```
+
+```{r load-cv-bayes-r}
+load(file = "data/vendor_boost_cv_bayes_out.RData")
+```
+
+```{r eval-cv-bayes-r}
+collect_metrics(boost_cv_bayes_vendor) |> 
+  arrange(desc(mean))
+```
+
+```{r eval-bayes-r}
+#| eval: true
+#| echo: fenced
+
+boost_wf_best_bayes <- boost_wf |> 
+  finalize_workflow(select_best(boost_cv_bayes_vendor, 
+                                metric = "f_meas_sec_level")) |> 
+  fit(train_data)
+
+vendor_aug_bayes <- boost_wf_best_bayes |> 
+  augment(new_data = test_data)
+
+vendor_aug_bayes |> 
+  f_meas(recent_receipt_7,
+         .pred_class,
+         event_level = "second")
+
+vendor_aug_bayes |> 
+  conf_mat(recent_receipt_7,
+           .pred_class)
+vendor_aug_bayes
+```
+
+Iterative Search Cross-Validation slightly improved the model's performance compared to Grid-Search Cross-Validation.
+
+The F1 score of the model is 0.43
+
+## 1.2.2 Random Forest
+
+```{r random forest}
+rf_model <- rand_forest(
+  mode = "classification",
+  trees = tune(),  
+  mtry = tune()    
+) |>
+  set_engine("ranger")
+```
+
+We will use the same recipe as Gradient Boosting
+
+```{r res rf}
+rf_recipe_vendor <- recipe(recent_receipt_7 ~ ., data = train_data) |> 
+  step_naomit(recent_receipt_7) |> 
+  step_upsample(recent_receipt_7) |>
+  step_impute_mean(all_numeric(), -all_outcomes()) |> 
+  step_impute_mode(all_nominal(), -all_outcomes()) 
+
+rf_workflow <- workflow() |>
+  add_recipe(rf_recipe_vendor) |>
+  add_model(rf_model)
+```
+
+Grid-Search Cross-Validation
+
+trees(range = c(100, 3000)) to balance between accurate predictions (more trees) and faster training (fewer trees).
+
+mtry(c(2, ncol(train_data) - 1)) tries different numbers of predictors for each split, from a small amount (2) to almost all predictors, to see what works best, uses all predictors except the target value
+
+```{r grid rf}
+rf_grid <- grid_regular(
+  trees(range = c(100, 3000)),  
+  mtry(range = c(2, ncol(train_data) - 1)),  
+  levels = 8  
+)
+
+```
+
+```{r tune grid}
+set.seed(123)
+rf_folds <- vfold_cv(train_data, v = 6)
+f_meas_sec_level <- metric_tweak("f_meas_sec_level", f_meas,
+                                 event_level = "second")
+
+rf_results_vendor <- tune_grid(
+  rf_workflow,
+  resamples = rf_folds,
+  grid = rf_grid,
+  metrics = metric_set(f_meas_sec_level),
+  control = control_grid(save_pred = TRUE)
+)
+save(rf_results_vendor, file = "data/vendor_rf_cv_out.RData")
+```
+
+```{r load rf results}
+load(file = "data/vendor_rf_cv_out.RData")
+```
+
+```{r}
+collect_metrics(rf_results_vendor) |> 
+  arrange(desc(mean))
+```
+
+```{r select best}
+best_rf <- rf_results_vendor |>
+  select_best(metric = "f_meas_sec_level")
+```
+
+```{r final model}
+rf_workflow_best <- rf_workflow |>
+  finalize_workflow(best_rf)
+
+rf_final_model <- rf_workflow_best |>
+  fit(train_data)
+```
+
+```{r evaluating}
+rf_test_results_vendor <- rf_final_model |>
+  augment(new_data = test_data)
+
+rf_test_results_vendor |>
+  f_meas(recent_receipt_7, .pred_class, event_level = "second")
+
+rf_test_results_vendor |>
+  conf_mat(recent_receipt_7, .pred_class)
+
+```
+
+## Iterative Search Cross-Validation for Random Forest(For Bonus Point)
+
+```{r rf iterative}
+rf_params <- extract_parameter_set_dials(rf_workflow) |> 
+  update(
+    trees = trees(range = c(1000, 3000)),
+    mtry = mtry(range = c(2, ncol(train_data) - 1))
+  )
+
+set.seed(456)
+rf_iterative_results <- rf_workflow |> 
+  tune_bayes(
+    resamples = rf_folds,
+    param_info = rf_params,
+    iter = 100,
+    metrics = metric_set(f_meas_sec_level),
+    control = control_bayes(no_improve = 15, save_pred = TRUE)
+  )
+
+save(rf_iterative_results, file = "data/vendor_rf_iterative_bayes_out.RData")
+
+```
+
+Load file
+
+```{r rf iterative load file}
+load(file = "data/vendor_rf_iterative_bayes_out.RData")
+```
+
+Finalize the workflow with the best parameters
+
+```{r rf best}
+collect_metrics(rf_iterative_results) |> 
+  arrange(desc(mean))
+
+best_rf_iterative <- rf_iterative_results |> 
+  select_best(metric = "f_meas_sec_level")
+
+rf_workflow_best_iterative <- rf_workflow |> 
+  finalize_workflow(best_rf_iterative)
+
+rf_final_model_iterative <- rf_workflow_best_iterative |> 
+  fit(train_data)
+
+```
+
+Testing and Evaluation
+
+```{r test and eval}
+
+rf_test_results_iterative <- rf_final_model_iterative |> 
+  augment(new_data = test_data)
+
+rf_test_results_iterative |> 
+  f_meas(recent_receipt_7, .pred_class, event_level = "second")
+
+rf_test_results_iterative |> 
+  conf_mat(recent_receipt_7, .pred_class)
+```
+
+1.3. Gradient Boosting with Iterative Search Cross-Validation performed better than others
+
+Gradient Boosting Grid-Search Cross-Validation: 0.38
+
+Gradient Boosting Iterative Search Cross-Validation:0.43
+
+Random Forest Grid-Search Cross-Validation:0.23
+
+Random Forest Iterative Search Cross-Validation:0.25
+
+1.4. I can't compare with Assignment 2, because I used different features and f_meas with default level(first)
+
+2\. This semester, I found Gradient Boosting to be one of the most interesting techniques we studied. It improves predictions step by step by correcting errors from earlier stages, making it a practical and efficient method. It works well with complex tasks like imbalanced or noisy data, and its settings, such as the number of trees and learning rate, can be easily adjusted for different needs.
