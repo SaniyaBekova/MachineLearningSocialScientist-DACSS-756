@@ -12,6 +12,7 @@ format:
 editor: source
 ---
 
+
 ## 1.1. Variable choice
 
 From previous assignment bonus task, Lasso left these variables: hh_income, acres_plots, bicycles, basic_cell_phones,yrs_in_mkt, profit, customers_pr_day
@@ -21,6 +22,7 @@ I will add some categorical variables with few levels:
 female with 2 levels, married with 2 levels, pay_even_disagree with 2 levels
 
 ## Importing libraries and loading data
+
 
 ```{r load data and split train/test}
 #| message: false
@@ -48,7 +50,9 @@ selected_vendor_data <- vendor_data |>
          pay_even_disagree, test, recent_receipt_7)
 ```
 
+
 ## Splitting train/test data
+
 
 ```{r test/train data}
 #| warning: false
@@ -62,6 +66,7 @@ test_data <- selected_vendor_data |>
   select(-test)
 ```
 
+
 ## 1.2.1. Gradient Boosting
 
 step_naomit(recent_receipt_7) - drops `NA` values from our outcome, `recent_receipt_7`
@@ -71,6 +76,7 @@ step_upsample(recent_receipt_7) - to balance the outcome `recent_receipt_7`
 step_impute_mean - to replace NA's from all numeric features with their mean value
 
 step_impute_mode - to replace NA's from all categorical features with their mode value
+
 
 ```{r}
 #| message: false
@@ -102,6 +108,7 @@ boost_wf <- workflow() |>
   add_model(boost_vendor)
 ```
 
+
 ## Grid-Search Cross-Validation
 
 Used trees from 500 to 3000 by 500. This range lets the model try smaller numbers of trees for quicker training and larger numbers for better accuracy, covering a good middle ground
@@ -109,6 +116,7 @@ Used trees from 500 to 3000 by 500. This range lets the model try smaller number
 tree_depth - depth controls how detailed each tree can get; shallow trees are simple and fast, while deeper ones can capture more complexity without going overboard
 
 learn_rate (0.01, 0.05, 0.1).Learning rate affects how quickly the model adjusts; smaller values are careful but slow, and larger ones are faster but risk missing details, so these options balance it out.
+
 
 ```{r cv-r}
 #| eval: false
@@ -170,6 +178,7 @@ vendor_test_aug |>
            .pred_class)
 ```
 
+
 The F1 score of the model is 0.385. Gradient Boosting did not perform well.
 
 ## Iterative Search Cross-Validation (For Bonus Point)
@@ -177,6 +186,7 @@ The F1 score of the model is 0.385. Gradient Boosting did not perform well.
 `trees(range = c(1000, 3000))`. The model tries between 1000 and 3000 trees to balance accuracy and training time. Fewer trees train faster, and more trees can capture complex patterns.
 
 `iter = 100`. The model tests 100 different combinations of parameters.
+
 
 ```{r cv-bayes-r}
 #| eval: false
@@ -233,11 +243,13 @@ vendor_aug_bayes |>
 vendor_aug_bayes
 ```
 
+
 Iterative Search Cross-Validation slightly improved the model's performance compared to Grid-Search Cross-Validation.
 
 The F1 score of the model is 0.43
 
 ## 1.2.2 Random Forest
+
 
 ```{r random forest}
 rf_model <- rand_forest(
@@ -248,7 +260,9 @@ rf_model <- rand_forest(
   set_engine("ranger")
 ```
 
+
 We will use the same recipe as Gradient Boosting
+
 
 ```{r res rf}
 rf_recipe_vendor <- recipe(recent_receipt_7 ~ ., data = train_data) |> 
@@ -262,11 +276,13 @@ rf_workflow <- workflow() |>
   add_model(rf_model)
 ```
 
+
 Grid-Search Cross-Validation
 
 trees(range = c(100, 3000)) to balance between accurate predictions (more trees) and faster training (fewer trees).
 
 mtry(c(2, ncol(train_data) - 1)) tries different numbers of predictors for each split, from a small amount (2) to almost all predictors, to see what works best, uses all predictors except the target value
+
 
 ```{r grid rf}
 rf_grid <- grid_regular(
@@ -327,7 +343,9 @@ rf_test_results_vendor |>
 
 ```
 
+
 ## Iterative Search Cross-Validation for Random Forest(For Bonus Point)
+
 
 ```{r rf iterative}
 rf_params <- extract_parameter_set_dials(rf_workflow) |> 
@@ -350,13 +368,17 @@ save(rf_iterative_results, file = "data/vendor_rf_iterative_bayes_out.RData")
 
 ```
 
+
 Load file
+
 
 ```{r rf iterative load file}
 load(file = "data/vendor_rf_iterative_bayes_out.RData")
 ```
 
+
 Finalize the workflow with the best parameters
+
 
 ```{r rf best}
 collect_metrics(rf_iterative_results) |> 
@@ -373,7 +395,9 @@ rf_final_model_iterative <- rf_workflow_best_iterative |>
 
 ```
 
+
 Testing and Evaluation
+
 
 ```{r test and eval}
 
@@ -386,6 +410,7 @@ rf_test_results_iterative |>
 rf_test_results_iterative |> 
   conf_mat(recent_receipt_7, .pred_class)
 ```
+
 
 1.3. Gradient Boosting with Iterative Search Cross-Validation performed better than others
 
@@ -400,3 +425,4 @@ Random Forest Iterative Search Cross-Validation:0.25
 1.4. I can't compare with Assignment 2, because I used different features and f_meas with default level(first)
 
 2\. This semester, I found Gradient Boosting to be one of the most interesting techniques we studied. It improves predictions step by step by correcting errors from earlier stages, making it a practical and efficient method. It works well with complex tasks like imbalanced or noisy data, and its settings, such as the number of trees and learning rate, can be easily adjusted for different needs.
+
