@@ -1,0 +1,254 @@
+---
+title: "Project Report"
+author: "Saniya Bekova"
+date: "12/04/2024"
+format: 
+  pdf:
+    code-line-wrap: true
+    listing-options:
+      breaklines: true
+      breakatwhitespace: true
+      frame: single
+editor: source
+---
+```{r libraries}
+library(tidymodels)
+library(tidyverse)
+library(bonsai) 
+library(themis) 
+```
+
+```{r load data}
+#-country, -p7, -leader, -deputy_leader, -`Country Code`,-Region, -`Income Group`, -medal_Efficiency, -awards_gold, -awards_bronze, -awards_silver, -awards_honorable_mentions, -medal_Efficiency
+
+
+#year, team_size_all, team_size_male, Value_gross_enr_ratio_for_tertirary_edu, Value_gov_expen_as_perc_of_GPP, Value_literacy_rate, average_score_per_contestant, Region
+combined_educ_data <-read_csv("data/combined_educ_data.csv")
+str(combined_educ_data)
+education_numeric_data <- combined_educ_data |>
+  select(-country, -p7, -leader, -deputy_leader, -`Country Code`,-Region, -`Income Group`, -medal_Efficiency, -awards_gold, -awards_bronze, -awards_silver, -awards_honorable_mentions, -medal_Efficiency, -total_score, -p1, -p2, -p3, -p4, -p5, -p6)
+
+```
+```{r train test split and recipe}
+set.seed(1234)
+educ_data_split <- initial_split(education_numeric_data, prop = 3/4, strata = Value_gov_expen_as_perc_of_GPP)
+train_data <- training(educ_data_split)
+test_data <- testing(educ_data_split)
+
+edu_recipe <- recipe(average_score_per_contestant ~ ., data = train_data) |>
+  step_nzv(all_predictors()) |>   # Remove near-zero variance predictors
+  step_impute_mean(all_numeric(), -all_outcomes()) |> # Impute missing values for numeric predictors
+ step_impute_mode(all_nominal()) |>
+  step_unknown(all_nominal(), -all_outcomes()) |>
+ step_normalize(all_numeric_predictors())            # Normalize numeric predictors
+```
+```{r lasso}
+library(tidymodels)
+library(glmnet)
+library(dplyr)
+
+
+lasso_spec_tune <- linear_reg() |>
+  set_engine("glmnet") |>
+  set_args(mixture = 1, penalty = tune()) |>
+  set_mode("regression")
+
+
+lasso_recipe <- recipe(average_score_per_contestant ~ ., data = train_data) |>
+  step_nzv(all_predictors()) |>                   
+  step_impute_mean(all_numeric(), -all_outcomes()) |>
+  step_normalize(all_numeric_predictors())           
+
+
+lasso_wf <- workflow() |>
+  add_recipe(lasso_recipe) |>
+  add_model(lasso_spec_tune)
+
+
+penalty_grid <- grid_regular(
+  penalty(range = c(-2, 5)),  
+  levels = 100
+)
+
+
+data_cv5 <- vfold_cv(train_data, v = 5)
+
+
+tune_output <- tune_grid(
+  lasso_wf,
+  resamples = data_cv5,
+  metrics = metric_set(yardstick::rmse),  
+  grid = penalty_grid
+)
+
+
+autoplot(tune_output) + theme_classic()
+
+
+collect_metrics(tune_output) |>
+  filter(.metric == "rmse") |>
+  select(penalty, mean_rmse = mean)
+
+
+best_pen_lasso <- select_best(tune_output, metric = "rmse")
+
+
+lasso_final_fit <- lasso_wf |>
+  finalize_workflow(best_pen_lasso) |>
+  fit(data = train_data)
+
+
+lasso_coefs <- coef(
+  lasso_final_fit |>
+    extract_fit_engine(),
+  s = best_pen_lasso$penalty
+)
+
+
+tibble(
+  Predictor = rownames(lasso_coefs),
+  Coefficient = as.vector(lasso_coefs)
+)
+
+```
+## Linear Regression
+```{r linear regression}
+
+library(tidymodels)
+library(Metrics)
+library(dplyr)
+
+# Create a linear regression model specification
+lm_spec <- linear_reg() |>
+  set_engine("lm")
+
+# Create a workflow to combine preprocessing and modeling
+lm_workflow <- workflow() |>
+  add_recipe(edu_recipe) |>
+  add_model(lm_spec)
+
+# Fit the model to the training data
+lm_fit <- fit(lm_workflow, data = train_data)
+
+# View model summary using the new function
+summary_model <- extract_fit_parsnip(lm_fit) |>
+  tidy()
+print(summary_model)
+
+# Preprocess and predict on the test data
+y_pred <- predict(lm_fit, new_data = test_data) |>
+  pull(.pred)
+
+# Replace negative predictions with a small positive value to avoid NaNs in log
+y_pred <- ifelse(y_pred < 0, 1e-6, y_pred)
+
+# Evaluate performance metrics
+mse_train <- mean((train_data$average_score_per_contestant - predict(lm_fit, new_data = train_data) |>
+                     pull(.pred))^2)
+r2_train <- caret::R2(predict(lm_fit, new_data = train_data) |> pull(.pred), train_data$average_score_per_contestant)
+
+mse_test <- mean((test_data$average_score_per_contestant - y_pred)^2)
+r2_test <- caret::R2(y_pred, test_data$average_score_per_contestant)
+
+# Calculate additional error metrics
+msle_test <- msle(test_data$average_score_per_contestant, y_pred)
+rmsle_test <- sqrt(msle_test)
+
+# Print results
+cat("Training MSE:", mse_train, "\n")
+cat("Training R-squared:", r2_train, "\n")
+cat("Test MSE:", mse_test, "\n")
+cat("Test R-squared:", r2_test, "\n")
+cat("Mean Squared Log Error (MSLE):", msle_test, "\n")
+cat("Root Mean Squared Log Error (RMSLE):", rmsle_test, "\n")
+
+```
+## Gradient Boosting
+```{r gradient boosting}
+#| message: false
+#| warning: false
+
+
+boost_edu <- boost_tree(mode = "regression",
+                          engine = "lightgbm",
+                          # B
+                          trees = tune(),
+                          # d
+                          tree_depth = tune(),
+                          # lambda
+                          learn_rate = tune()) 
+
+
+boost_wf <- workflow() |>
+  add_recipe(edu_recipe) |>
+  add_model(boost_edu)
+```
+```{r cv-bayes-r}
+#| eval: false
+#| echo: fenced
+
+folds <- vfold_cv(train_data,
+               v = 6)
+
+boost_grid <- crossing(
+ trees =  seq(500, 3000, by = 500),
+ tree_depth = 1:5,
+ learn_rate = c(0.01, 0.05, 0.1)
+)
+
+
+
+boost_cv_edu <- tune_grid(boost_wf,
+                      resamples = folds,
+                      grid = boost_grid,
+                      metrics = metric_set(yardstick::rmse)
+                      )
+
+boost_params <- extract_parameter_set_dials(boost_wf)
+
+boost_params <- boost_params |> 
+  update(trees = trees(range = c(1000, 3000)))
+
+set.seed(756)
+boost_cv_bayes_edu <- boost_wf |> 
+  tune_bayes(
+    resamples = folds,
+    param_info = boost_params,
+    initial = boost_cv_edu,
+    iter = 50,
+    metrics = metric_set(yardstick::rmse),
+    control = control_bayes(no_improve = 15)
+  )
+
+save(boost_cv_bayes_edu, file = "data/boost_cv_bayes_edu.RData")
+```
+```{r load-cv-bayes-r}
+load(file = "data/boost_cv_bayes_edu.RData")
+```
+
+```{r eval-cv-bayes-r}
+collect_metrics(boost_cv_bayes_edu) |> 
+  arrange(desc(mean))
+```
+
+```{r eval-bayes-r}
+#| eval: true
+#| echo: fenced
+
+boost_wf_best_bayes <- boost_wf |> 
+  finalize_workflow(select_best(boost_cv_bayes_edu, 
+                                metric = "rmse")) |> 
+  fit(train_data)
+
+edu_aug_bayes <- boost_wf_best_bayes |> 
+  augment(new_data = test_data)
+
+# Calculate RMSE and R^2
+boost_metrics <- metrics(
+  edu_aug_bayes,
+  truth = average_score_per_contestant,
+  estimate = .pred
+)
+
+print(boost_metrics)  # Displays RMSE and R^2
+```
