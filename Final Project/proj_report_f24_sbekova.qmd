@@ -86,13 +86,25 @@ By focusing on the average score, this analysis can effectively explore the conn
 #| warning: false
 literacy_rate_by_country_and_region <- read_csv("data/literacy_data.csv")
 
-country_and_region_data <- read_xlsx("data/P_Data_Extract_From_Education_Statistics_-_All_Indicators_Metadata.xlsx", sheet = "Country - Metadata")
+country_and_region_data <- read_xlsx(
+  "data/P_Data_Extract_From_Education_Statistics_-_All_Indicators_Metadata.xlsx",
+  sheet = "Country - Metadata")
 
 youth_literacy_rate <- literacy_rate_by_country_and_region |>
   filter(Series == "Youth literacy rate, population 15-24 years, both sexes (%)")
 
 youth_literacy_rate <- pivot_longer(youth_literacy_rate, 
-                                   cols = c('2009 [YR2009]', '2010 [YR2010]', '2011 [YR2011]', '2012 [YR2012]', '2013 [YR2013]', '2014 [YR2014]', '2015 [YR2015]', '2016 [YR2016]', '2017 [YR2017]', '2018 [YR2018]', '2019 [YR2019]'), 
+                                   cols = c('2009 [YR2009]', 
+                                            '2010 [YR2010]', 
+                                            '2011 [YR2011]',
+                                            '2012 [YR2012]', 
+                                            '2013 [YR2013]', 
+                                            '2014 [YR2014]', 
+                                            '2015 [YR2015]', 
+                                            '2016 [YR2016]', 
+                                            '2017 [YR2017]', 
+                                            '2018 [YR2018]', 
+                                            '2019 [YR2019]'), 
                                    names_to = "Year",                  
                                    values_to = "Literacy_Rate") |>
   mutate(Year = str_replace(Year, " \\[YR[0-9]+\\]", "")) |>
@@ -184,19 +196,24 @@ imo_data <- imo_data |>
   mutate(average_score_per_contestant = total_score / team_size_all)
 
 imo_data <- imo_data |>
-  mutate(medal_Efficiency = ifelse(team_size_all > 0, 
-                                   (awards_gold + awards_silver + awards_bronze) / team_size_all, 
+  mutate(medal_Efficiency = ifelse(
+    team_size_all > 0, 
+    (awards_gold + awards_silver + awards_bronze) / team_size_all, 
                                    NA))
 
 combined_data <- imo_data |>
-  left_join(education_data_updated, by = c("country" = "Country", "year" = "Year"))
+  left_join(education_data_updated, by = c("country" = "Country", 
+                                           "year" = "Year"))
 
 combined_data <- combined_data |>
-  mutate(Gov_Investment_Per_Medal = ifelse((awards_gold + awards_silver + awards_bronze) > 0, 
-                                           Value_gov_expen_as_perc_of_GPP / (awards_gold + awards_silver + awards_bronze), 
+  mutate(Gov_Investment_Per_Medal = ifelse(
+    (awards_gold + awards_silver + awards_bronze) > 0, 
+    Value_gov_expen_as_perc_of_GPP / 
+      (awards_gold + awards_silver + awards_bronze), 
                                            NA),
-         Lit_Performance_Ratio = ifelse(average_score_per_contestant > 0, 
-                                        Value_literacy_rate / average_score_per_contestant, 
+         Lit_Performance_Ratio = ifelse(
+           average_score_per_contestant > 0, 
+           Value_literacy_rate / average_score_per_contestant, 
                                         NA))
 
 combined_data <- combined_data |>
@@ -254,15 +271,17 @@ Percentage of graduates from tertiary education graduating from Natural Sciences
 education_data_new <- read_csv('data/New_Education_Data.csv') 
 
 education_data_new_1 <- education_data_new |>
-  filter(Series %in% c('Government expenditure on education, constant US$ (millions)', 
-                       'Government expenditure on education, US$ (millions)',
-                       'GDP per capita (current US$)',
-                       'Expenditure on education as % of total government expenditure (%)',
-                       'Current expenditure as % of total expenditure in public institutions (%)',
-                       'Annual statutory teacher salaries in public institutions in USD. Primary. 10 years of experience',
-                       'Labor force with advanced education (% of total labor force)',
-                       'Internet users (per 100 people)',
-                       'Percentage of graduates from tertiary education graduating from Natural Sciences, Mathematics and Statistics programmes, both sexes (%)'))
+  filter(
+    Series %in% 
+      c('Government expenditure on education, constant US$ (millions)', 
+        'Government expenditure on education, US$ (millions)',
+        'GDP per capita (current US$)',
+        'Expenditure on education as % of total government expenditure (%)',
+        'Current expenditure as % of total expenditure in public institutions (%)',
+        'Annual statutory teacher salaries in public institutions in USD. Primary. 10 years of experience',
+        'Labor force with advanced education (% of total labor force)',
+        'Internet users (per 100 people)',
+        'Percentage of graduates from tertiary education graduating from Natural Sciences, Mathematics and Statistics programmes, both sexes (%)'))
 
 
 head(education_data_new_1)
@@ -274,7 +293,17 @@ head(education_data_new_1)
 #| message: false
 #| warning: false
 educational_data_2 <-  pivot_longer(education_data_new_1, 
-                                   cols = c('2009 [YR2009]', '2010 [YR2010]', '2011 [YR2011]', '2012 [YR2012]', '2013 [YR2013]', '2014 [YR2014]', '2015 [YR2015]', '2016 [YR2016]', '2017 [YR2017]', '2018 [YR2018]', '2019 [YR2019]'), 
+                                   cols = c('2009 [YR2009]', 
+                                            '2010 [YR2010]', 
+                                            '2011 [YR2011]', 
+                                            '2012 [YR2012]', 
+                                            '2013 [YR2013]', 
+                                            '2014 [YR2014]', 
+                                            '2015 [YR2015]', 
+                                            '2016 [YR2016]', 
+                                            '2017 [YR2017]', 
+                                            '2018 [YR2018]', 
+                                            '2019 [YR2019]'), 
                                    names_to = "Year",                  
                                    values_to = "Value") |>
   mutate(Year = str_replace(Year, " \\[YR[0-9]+\\]", "")) 
@@ -283,7 +312,8 @@ educational_data_2 |>
   pivot_wider(names_from = `Series Code`,
               values_from = Value) |>
   select(`Country Name`, `Country Code`, Year, SE.TER.GRAD.SC.ZS,
-         IT.NET.USER.P2, SL.TLF.ADVN.ZS, UIS.X.US.FSGOV, UIS.X.USCONST.FSGOV, NY.GDP.PCAP.CD, SE.XPD.TOTL.GB.ZS, SE.XPD.CUR.TOTL.ZS, OECD.TSAL.1.E10 )
+         IT.NET.USER.P2, SL.TLF.ADVN.ZS, UIS.X.US.FSGOV, UIS.X.USCONST.FSGOV, 
+         NY.GDP.PCAP.CD, SE.XPD.TOTL.GB.ZS, SE.XPD.CUR.TOTL.ZS, OECD.TSAL.1.E10)
 ```
 
 ```{r load new features}
@@ -425,6 +455,12 @@ write_csv(combined_educ_data, "data/combined_educ_data.csv")
 
 ### 2.7 Split data
 
+The following variables were removed because they directly contribute to the outcome variable:
+-medal_Efficiency, -awards_gold, -awards_bronze, -awards_silver, -awards_honorable_mentions, -total_score, -p1, -p2, -p3, -p4, -p5, -p6.
+
+The following variables were removed because they are categorical:
+-country, -p7, -leader, -deputy_leader, -Country Code, -Region, -Income Group.
+
 ```{r load combined data}
 #| message: false
 #| warning: false
@@ -432,7 +468,11 @@ write_csv(combined_educ_data, "data/combined_educ_data.csv")
 combined_educ_data <-read_csv("data/combined_educ_data.csv")
 
 education_numeric_data <- combined_educ_data |>
-  select(-country, -p7, -leader, -deputy_leader, -`Country Code`,-Region, -`Income Group`, -medal_Efficiency, -awards_gold, -awards_bronze, -awards_silver, -awards_honorable_mentions, -medal_Efficiency, -total_score, -p1, -p2, -p3, -p4, -p5, -p6)
+  select(-country, -p7, -leader, -deputy_leader,
+         -`Country Code`,-Region, -`Income Group`, -medal_Efficiency,
+         -awards_gold, -awards_bronze, -awards_silver, 
+         -awards_honorable_mentions, -medal_Efficiency, 
+         -total_score, -p1, -p2, -p3, -p4, -p5, -p6)
 
 str(education_numeric_data)
 
@@ -442,7 +482,8 @@ str(education_numeric_data)
 #| message: false
 #| warning: false
 set.seed(1234)
-educ_data_split <- initial_split(education_numeric_data, prop = 3/4, strata = Value_gov_expen_as_perc_of_GPP)
+educ_data_split <- initial_split(education_numeric_data, prop = 3/4, 
+                                 strata = Value_gov_expen_as_perc_of_GPP)
 train_data <- training(educ_data_split)
 test_data <- testing(educ_data_split)
 
@@ -508,7 +549,8 @@ library(ggrepel)
 top_countries_2019 <- combined_data |>
   filter(year == 2019) |>
   group_by(country) |>
-  summarize(total_medals_2019 = sum(awards_gold + awards_silver + awards_bronze, na.rm = TRUE)) |>
+  summarize(total_medals_2019 = sum(awards_gold + awards_silver + awards_bronze, 
+                                    na.rm = TRUE)) |>
   arrange(desc(total_medals_2019)) |>
   slice_head(n = 3) |>
   pull(country)
@@ -517,18 +559,22 @@ top_countries_2019 <- combined_data |>
 medal_data <- combined_data |>
   filter(country %in% top_countries_2019, year >= 2009, year <= 2019) |>
   group_by(year, country) |>
-  summarize(total_medals = sum(awards_gold + awards_silver + awards_bronze, na.rm = TRUE)) |>
+  summarize(total_medals = sum(awards_gold + awards_silver + awards_bronze, 
+                               na.rm = TRUE)) |>
   ungroup()
 
 
-country_colors <- setNames(c("#615e9b", "#ff9e1b", "#44693d"), top_countries_2019)
+country_colors <- setNames(c("#615e9b", "#ff9e1b", "#44693d"), 
+                           top_countries_2019)
 
 
-ggplot(medal_data, aes(x = year, y = total_medals, color = country, group = country)) +
+ggplot(medal_data, aes(x = year, y = total_medals, color = country, 
+                       group = country)) +
   geom_line(size = 1.5) +
   geom_point(size = 3) + 
   scale_color_manual(values = country_colors) +
-  scale_x_continuous(breaks = seq(2009, 2019, by = 1), labels = as.character(seq(2009, 2019, by = 1))) +
+  scale_x_continuous(breaks = seq(2009, 2019, by = 1), 
+                     labels = as.character(seq(2009, 2019, by = 1))) +
   labs(
     title = "Medal Counts of the Top 3 Countries in 2019 ",
     subtitle = "Over the Period 2009–2019",
@@ -566,7 +612,9 @@ Literacy Rate Ranges
 #|  Given density plot shows the Distribution of Average IMO Scores by 
 #|  Literacy Rate Ranges
 
-ggplot(train_data, aes(x = average_score_per_contestant, fill = cut(Value_literacy_rate, breaks = seq(90, 100, by = 2)))) +
+ggplot(train_data, aes(x = average_score_per_contestant, 
+                       fill = cut(Value_literacy_rate, 
+                                  breaks = seq(90, 100, by = 2)))) +
   geom_density(alpha = 0.6) +
   scale_fill_brewer(palette = "Blues", name = "Literacy Rate Range (%)") +
   labs(
@@ -594,17 +642,21 @@ The plot suggests that literacy rate does not strongly impact the distribution o
 train_data_fem <- train_data |>
   mutate(
     team_size_female = ifelse(is.na(team_size_female), 0, team_size_female), 
-    has_female_team = ifelse(team_size_female > 0, "With Female Team", "Without Female Team")
+    has_female_team = ifelse(team_size_female > 0, 
+                             "With Female Team", "Without Female Team")
   )
 
-boxplot_1 <- ggplot(train_data_fem, aes(x = has_female_team, y = average_score_per_contestant, fill = has_female_team)) +
+boxplot_1 <- ggplot(train_data_fem, aes(x = has_female_team, 
+                                        y = average_score_per_contestant, 
+                                        fill = has_female_team)) +
   geom_boxplot() +
   labs(
     title = "\nAverage IMO Score per Contestant \n by Female Team Presence",
     x = "Female Team Presence",
     y = "Average Score per Contestant"
   ) +
-  scale_fill_manual(values = c("With Female Team" = "#F28E2B", "Without Female Team" = "#4E79A7")) +
+  scale_fill_manual(values = c("With Female Team" = "#F28E2B", 
+                               "Without Female Team" = "#4E79A7")) +
   theme_minimal() +
   theme(legend.position = "none",
     plot.title = element_text(hjust = 1, size = 8, margin = margin(b = 10)), 
@@ -668,7 +720,9 @@ y_pred <- predict(lm_fit, new_data = test_data) |>
 
 y_pred <- ifelse(y_pred < 0, 1e-6, y_pred)
 
-mse_train <- mean((train_data$average_score_per_contestant - predict(lm_fit, new_data = train_data) |>
+mse_train <- mean(
+  (train_data$average_score_per_contestant - predict(lm_fit,
+                                                     new_data = train_data) |>
                      pull(.pred))^2)
 r2_train <- caret::R2(predict(lm_fit, new_data = train_data) |> pull(.pred), train_data$average_score_per_contestant)
 
@@ -858,7 +912,9 @@ actual <- mls_test_gam$average_score_per_contestant
 predicted <- mls_test_gam$.pred
 valid_data <- mls_test_gam[!is.na(actual) & !is.na(predicted), ]
 
-rmsle_gam <- rmsle(actual = valid_data$average_score_per_contestant, predicted = valid_data$.pred)
+rmsle_gam <- rmsle(
+  actual = valid_data$average_score_per_contestant, 
+  predicted = valid_data$.pred)
 
 rmsle_gam
 
