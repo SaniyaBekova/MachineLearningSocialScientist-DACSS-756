@@ -34,54 +34,84 @@ library(scales)
 Data was collected from following resources:
 
 **UNESCO Institute for Statistics (UIS):** Educational indicators data collected 
-from https://sdg4-data.uis.unesco.org/. This data provides comprehensive 
+from <https://sdg4-data.uis.unesco.org/>. This data provides comprehensive 
 educational metrics for various countries across multiple years and was last 
 updated in September 2024. Data from 2013 to 2024
 
 **TidyTuesday GitHub Repository:** Data related to the International 
-Mathematical Olympiad (IMO) collected from https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-09-24/readme.md.
+Mathematical Olympiad (IMO) collected from 
+<https://github.com/rfordatascience/tidytuesday/blob/master/data/2024/2024-09-24/readme.md>.
 The IMO data tracks country-level performance, including scores, medals, 
 and rankings, and was also updated in September 2024. Data from 1959 to 2024
 
-**DataBank:** <https://databank.worldbank.org/source/education-statistics-%5e-all-indicators#> 
+**DataBank:** 
+<https://databank.worldbank.org/source/education-statistics-%5e-all-indicators#> 
 other educational series was collected from this site.
 
 ## Units of Analysis
 
--   **Countries**: Each country represents a unit of analysis in this dataset, with attributes related to educational performance (such as completion rates, expenditure) and their success in the IMO (average score, team size, medals won).
+-   **Countries**: Each country represents a unit of analysis in this dataset, 
+with attributes related to educational performance (such as completion rates,
+expenditure) and their success in the IMO (average score, team size, medals won).
 
--   **Time**: The dataset spans multiple years, allowing for the analysis of trends over time in both education indicators and IMO performance.
+-   **Time**: The dataset spans multiple years, allowing for the analysis of 
+trends over time in both education indicators and IMO performance.
 
 ## Topic Description
 
-This project aims to explore how a country’s education system impacts its performance in the **International Mathematical Olympiad (IMO)**. I am particularly interested in studying the relationship between **government spending on education, primary and secondary education completion rates, literacy rates** and a country's success in the IMO.
+This project aims to explore how a country’s education system impacts its 
+performance in the **International Mathematical Olympiad (IMO)**. 
+I am particularly interested in studying the relationship between 
+**government spending on education, literacy rates** and a country's 
+success in the IMO.
 
 ## Why This Topic?
 
-This topic interests me because I want to understand how a country’s investment in education and the quality of its education system influence its ability to succeed in international academic competitions like the IMO. By exploring these relationships, I hope to identify the factors that most strongly contribute to winning medals or achieving high scores in the IMO.
+This topic interests me because I want to understand how a country’s 
+investment in education and the quality of its education system influence 
+its ability to succeed in international academic competitions like the IMO.
+By exploring these relationships, I hope to identify the factors that most 
+strongly contribute to winning medals or achieving high scores in the IMO.
 
 ## Expectations
 
-I expect to find a **positive relationship** between a country’s investment in education and its success in the IMO.
+I expect to find a **positive relationship** between a country’s investment 
+in education and its success in the IMO.
 
 ```{r load data}
 
 #| message: false
 #| warning: false
 #load data
-education_data <- read_csv('data/education_data.csv')  # Dataset 1: Educational indicators
-imo_data <- read_csv('data/imo_data.csv')  # Dataset 2: IMO competition results
+education_data <- read_csv('data/education_data.csv')  
+imo_data <- read_csv('data/imo_data.csv')  
 ```
 
 ## Main Outcome/Target (Y Variable):
 
-The main outcome or target variable in this analysis is the **average score per contestant for each country in a given year**. This is calculated by summing the scores from problems 1 to 7 for each country’s team and dividing the total by the number of participants (team_size_all). This variable represents how well the entire team from each country performed in the International Mathematical Olympiad (IMO).
+The main outcome or target variable in this analysis is the
+**average score per contestant for each country in a given year**. 
+This is calculated by summing the scores from problems 1 to 7 for each 
+country’s team and dividing the total by the number of 
+participants (team_size_all). This variable represents how well the entire 
+team from each country performed in the International Mathematical Olympiad (IMO).
 
-This outcome is a good fit for the study because it provides a clear measure of how well a country’s education system prepares students for international competitions. By using the average score, the analysis captures the performance of the whole team, not just the top individual performers. This is important for understanding the impact of educational investments, such as government spending on education, literacy rates, and school completion rates, on a country’s success in the IMO.
+This outcome is a good fit for the study because it provides a clear measure 
+of how well a country’s education system prepares students for international 
+competitions. By using the average score, the analysis captures the performance 
+of the whole team, not just the top individual performers. This is important 
+for understanding the impact of educational investments, such as government 
+spending on education, literacy rates, and school completion rates, 
+on a country’s success in the IMO.
 
-The average score per contestant gives a more detailed and fair comparison between countries. It helps to evaluate the overall strength of the team, making it a useful measure for examining how education systems contribute to performance in international competitions.
+The average score per contestant gives a more detailed and fair comparison 
+between countries. It helps to evaluate the overall strength of the team, 
+making it a useful measure for examining how education systems contribute
+to performance in international competitions.
 
-By focusing on the average score, this analysis can effectively explore the connection between educational investments and a country’s overall performance in the IMO, making it a suitable target for this project.
+By focusing on the average score, this analysis can effectively explore 
+the connection between educational investments and a country’s overall 
+performance in the IMO, making it a suitable target for this project.
 
 ## 2.Exploratory Data Analysis
 
@@ -161,21 +191,41 @@ education_data_updated <- education_data_updated |>
 
 ### 2.2 Merging Educational Data:
 
-The educational indicators from the UNESCO Institute for Statistics were split across multiple variables (e.g., primary and secondary education completion rates, government expenditure on education). These were merged into a single dataset, ensuring all relevant indicators were available for each country and year. The merging process involved handling mismatched country names between the datasets. For example, differences such as "Kyrgyz Republic" vs. "Kyrgyzstan" were corrected manually to ensure proper alignment of the data.
+The educational indicators from the UNESCO Institute for Statistics were 
+split across multiple variables (e.g., primary and secondary education 
+completion rates, government expenditure on education). These were merged 
+into a single dataset, ensuring all relevant indicators were available for 
+each country and year. The merging process involved handling mismatched country 
+names between the datasets. For example, differences such as 
+"Kyrgyz Republic" vs. "Kyrgyzstan" were corrected manually to ensure proper 
+alignment of the data.
 
 ### 2.3 Combining IMO Data with Educational Data:
 
-The educational data (which now included literacy rates, completion rates, and government expenditure) was merged with the IMO performance data (e.g., team scores, medals won) to create a comprehensive dataset. This allowed for the analysis of the relationship between a country’s educational indicators and its performance in the IMO.
+The educational data (which now included literacy rates, completion rates,
+and government expenditure) was merged with the IMO performance data
+(e.g., team scores, medals won) to create a comprehensive dataset. 
+This allowed for the analysis of the relationship between a country’s 
+educational indicators and its performance in the IMO.
 
 ### 2.4 Creating New Variables :
 
-`Medal_Efficiency` This variable was created by dividing the total number of medals (gold, silver, and bronze) won by a country by its team size (team_size_all). It measures how efficiently a country converts its team into medals, providing insights into performance relative to team size.
+`Medal_Efficiency` This variable was created by dividing the total number 
+of medals (gold, silver, and bronze) won by a country by its team size 
+(team_size_all). It measures how efficiently a country converts its team into
+medals, providing insights into performance relative to team size.
 
-`Gov_Investment_Per_Medal` This variable measures the amount of government expenditure on education required to produce one IMO medal. It was created by dividing the government expenditure as a percentage of GDP by the total number of medals won.
+`Gov_Investment_Per_Medal` This variable measures the amount of government 
+expenditure on education required to produce one IMO medal. It was created 
+by dividing the government expenditure as a percentage of GDP by the 
+total number of medals won.
 
-`Lit_Performance_Ratio` This variable measures the ratio between a country’s youth literacy rate and its average IMO score or total number of medals won, helping to explore the link between literacy and performance.
+`Lit_Performance_Ratio` This variable measures the ratio between a country’s
+youth literacy rate and its average IMO score or total number of medals won,
+helping to explore the link between literacy and performance.
 
-These variables were created before the training-test split to avoid any issues related to leakage between the datasets.
+These variables were created before the training-test split to avoid any 
+issues related to leakage between the datasets.
 
 ```{r new variables}
 #| message: false
@@ -248,13 +298,15 @@ Expenditure on education as % of total government expenditure (%),
 
 Current expenditure as % of total expenditure in public institutions (%)
 
-Annual statutory teacher salaries in public institutions in USD. Primary. 10 years of experience
+Annual statutory teacher salaries in public institutions in USD. Primary. 
+10 years of experience
 
 Labor force with advanced education (% of total labor force)
 
 Internet users (per 100 people)
 
-Percentage of graduates from tertiary education graduating from Natural Sciences, Mathematics and Statistics programmes, both sexes (%)'
+Percentage of graduates from tertiary education graduating from Natural Sciences,
+Mathematics and Statistics programmes, both sexes (%)'
 
 ```{r load new educ data}
 #| message: false
@@ -469,7 +521,9 @@ edu_recipe <- recipe(average_score_per_contestant ~ ., data = train_data) |>
 
 #### 2.8.1.Scatter Plot: Government Expenditure vs. Average Score Per Contestant
 
-This plot shows the relationship between government spending on education (US\$ (millions)) and the average score achieved by a country’s team in the IMO.
+This plot shows the relationship between government spending on 
+education (US\$ (millions)) and the average score achieved by a country’s 
+team in the IMO.
 
 ```{r scatter plot}
 #| message: false
@@ -486,11 +540,22 @@ ggplot(train_data, aes(x = UIS.X.US.FSGOV, y = average_score_per_contestant)) +
 
 ```
 
-Interpretation:There is a positive correlation between government expenditure and the average IMO score per contestant. As government expenditure increases, the average IMO score tends to increase, as indicated by the orange regression line
+Interpretation:There is a positive correlation between government expenditure 
+and the average IMO score per contestant. As government expenditure increases,
+the average IMO score tends to increase, as indicated by the orange regression 
+line
 
-#### 2.8.2.Line Plot: Medal Counts of the Top 3 Countries in 2019 Over the Period 2009–2019
+#### 2.8.2.Line Plot: Medal Counts of the Top 3 Countries in 2019 
+Over the Period 2009–2019
 
-This line plot displays the total number of medals won by the top 3 countries from 2009 to 2019, selected based on their medal counts in 2019. Each line represents a country and tracks its medal achievements over time. The colors of the lines correspond to different countries, and the labels for each country are positioned next to the last point (2019) for easy identification. This visualization allows us to observe the trend and consistency of each country's performance in terms of medal counts over the 10-year period.
+This line plot displays the total number of medals won by the top 3 countries 
+from 2009 to 2019, selected based on their medal counts in 2019. Each line 
+represents a country and tracks its medal achievements over time. 
+The colors of the lines correspond to different countries, and the labels 
+for each country are positioned next to the last point (2019) for easy 
+identification. This visualization allows us to observe the trend and
+consistency of each country's performance in terms of medal 
+counts over the 10-year period.
 
 ```{r line plot}
 library(ggrepel)
@@ -548,7 +613,8 @@ ggplot(medal_data, aes(x = year, y = total_medals, color = country, group = coun
 
 ```
 
-#### 2.8.3.Density plot: Distribution of Average IMO Scores by Literacy Rate Ranges
+#### 2.8.3.Density plot: Distribution of Average IMO Scores by 
+Literacy Rate Ranges
 
 ```{r density plot}
 #| message: false
@@ -570,7 +636,10 @@ ggplot(train_data, aes(x = average_score_per_contestant, fill = cut(Value_litera
 
 Interpretation:
 
-The plot suggests that literacy rate does not strongly impact the distribution of average IMO scores per contestant. Countries with both lower and higher literacy rates show similar distributions of average scores, implying that literacy rate alone does not significantly influence IMO performance.
+The plot suggests that literacy rate does not strongly impact the 
+distribution of average IMO scores per contestant. Countries with both 
+lower and higher literacy rates show similar distributions of average scores,
+implying that literacy rate alone does not significantly influence IMO performance.
 
 #### 2.8.4.Boxplot: Compares the average IMO scores between countries with and without female team members:
 
@@ -597,17 +666,23 @@ ggplot(train_data_fem, aes(x = has_female_team, y = average_score_per_contestant
 
 ```
 
-The plot suggests a slight association between the absence of female team members and higher average IMO scores, although the difference is not very large.
+The plot suggests a slight association between the absence of female team 
+members and higher average IMO scores, although the difference is not very large.
 
 ## 3. Evaluation Metric
 
-RMSE and R-squared were used as evaluation metrics due to the regression nature of the task.
+RMSE and R-squared were used as evaluation metrics due to the regression 
+nature of the task.
 
 ## 4.Fit Models
 
 ### 4.1 Data Preprocessing
 
-step_nzv(all_predictors()) to remove near-zero variance predictors step_impute_mean(all_numeric(), -all_outcomes()) to impute missing values for numeric predictors step_impute_mode(all_nominal()) to impute missing categorical values step_normalize(all_numeric_predictors()) to ormalize numeric predictors
+step_nzv(all_predictors()) to remove near-zero variance predictors
+step_impute_mean(all_numeric(), -all_outcomes()) to impute missing
+values for numeric predictors 
+step_impute_mode(all_nominal()) to impute missing categorical values 
+step_normalize(all_numeric_predictors()) to ormalize numeric predictors
 
 ```{r lasso}
 library(tidymodels)
@@ -738,13 +813,26 @@ cat("Root Mean Squared Log Error (RMSLE):", rmsle_test, "\n")
 
 #### 4.2.2 Gradient Boosting
 
-`trees (500 to 3000, step 500)`: This range was chosen to balance computational efficiency with predictive accuracy. Smaller numbers of trees (e.g., 500) allow for faster training and provide a baseline for performance, while larger numbers (up to 3000) enable the model to capture more complex patterns in the data, covering a broad range to explore optimal tree count.
+`trees (500 to 3000, step 500)`: This range was chosen to balance computational
+efficiency with predictive accuracy. Smaller numbers of trees (e.g., 500)
+allow for faster training and provide a baseline for performance, while larger
+numbers (up to 3000) enable the model to capture more complex patterns in the 
+data, covering a broad range to explore optimal tree count.
 
-`tree_depth (1 to 5)`: Tree depth controls the complexity of each decision tree. A shallow depth (e.g., 1) promotes simpler and faster models, reducing the risk of overfitting, while deeper trees (up to 5) allow for capturing more intricate patterns in the data, providing a balanced exploration of model complexity.
+`tree_depth (1 to 5)`: Tree depth controls the complexity of each decision tree.
+A shallow depth (e.g., 1) promotes simpler and faster models, reducing the risk
+of overfitting, while deeper trees (up to 5) allow for capturing more intricate
+patterns in the data, providing a balanced exploration of model complexity.
 
-`learn_rate (0.01, 0.05, 0.1)`: The learning rate determines how quickly the model adjusts during training. A smaller rate (e.g., 0.01) ensures careful and incremental adjustments, minimizing the risk of overshooting optimal solutions, while a larger rate (e.g., 0.1) speeds up training, with values chosen to balance accuracy and convergence speed.
+`learn_rate (0.01, 0.05, 0.1)`: The learning rate determines how quickly the 
+model adjusts during training. A smaller rate (e.g., 0.01) ensures careful and 
+incremental adjustments, minimizing the risk of overshooting optimal solutions, 
+while a larger rate (e.g., 0.1) speeds up training, with values chosen to balance
+accuracy and convergence speed.
 
-`iter = 100`: The number of iterations (100) ensures a comprehensive exploration of the parameter space, allowing the model to evaluate a wide range of potential combinations and converge on the most effective hyperparameters.
+`iter = 100`: The number of iterations (100) ensures a comprehensive exploration
+of the parameter space, allowing the model to evaluate a wide range of potential 
+combinations and converge on the most effective hyperparameters.
 
 ```{r gradient boosting}
 #| message: false
@@ -837,9 +925,12 @@ print(boost_metrics)  # Displays RMSE and R^2
 
 ### 4.2.3 GAM
 
-Smoothing Basis `(bs = "cr")`: Cubic regression splines were chosen because they efficiently model nonlinear patterns while reducing the risk of overfitting.
+Smoothing Basis `(bs = "cr")`: Cubic regression splines were chosen because 
+they efficiently model nonlinear patterns while reducing the risk of overfitting.
 
-Maximum Degrees of Freedom `(k = 10)`: This setting controls the complexity of the spline, ensuring the model stays simple and easy to interpret while capturing enough flexibility to fit the data well.
+Maximum Degrees of Freedom `(k = 10)`: This setting controls the complexity of 
+the spline, ensuring the model stays simple and easy to interpret while 
+capturing enough flexibility to fit the data well.
 
 ```{r gam}
 #| message: false
@@ -924,39 +1015,59 @@ cat("R-squared (R2) using yardstick:", r2_gam_yardstick$.estimate, "\n")
 
 ## 5.Comparing Models
 
-Overfitting vs. Underfitting
+**Overfitting vs. Underfitting**
 
-Linear Regression: Tends to underfit since it assumes simple linear relationships. The R-squared values (\~0.37 and \~0.39) show it doesn’t capture the complexity of the data well.
+Linear Regression: Tends to underfit since it assumes simple linear 
+relationships. The R-squared values (\~0.37 and \~0.39) show it doesn’t 
+capture the complexity of the data well.
 
-Gradient Boosting: Strikes a good balance by adjusting hyperparameters to avoid both overfitting and underfitting. It performs better, with a test R-squared of 0.684.
+Gradient Boosting: Strikes a good balance by adjusting hyperparameters to 
+avoid both overfitting and underfitting. It performs better, with 
+a test R-squared of 0.684.
 
-GAM: Handles nonlinear relationships best, giving the highest test R-squared (0.772). However, it risks overfitting if the smoothing parameters aren’t tuned properly.
+GAM: Handles nonlinear relationships best, giving the highest 
+test R-squared (0.772). However, it risks overfitting if the 
+smoothing parameters aren’t tuned properly.
 
-Bias vs. Variance
+**Bias vs. Variance**
 
-Linear Regression: Has high bias (makes simple assumptions) but low variance (predictions don’t change much between datasets). This makes it consistent but not very accurate.
+Linear Regression: Has high bias (makes simple assumptions) but
+low variance (predictions don’t change much between datasets). 
+This makes it consistent but not very accurate.
 
-Gradient Boosting: Reduces bias by iteratively improving predictions and balances variance well with proper tuning.
+Gradient Boosting: Reduces bias by iteratively improving predictions and 
+balances variance well with proper tuning.
 
-GAM: Reduces bias by modeling complex patterns but can have higher variance depending on the smoothing settings.
+GAM: Reduces bias by modeling complex patterns but can have higher variance 
+depending on the smoothing settings.
 
-Flexibility vs. Interpretability
+**Flexibility vs. Interpretability**
 
-Linear Regression: Very simple and easy to interpret, but lacks flexibility for capturing complex relationships.
+Linear Regression: Very simple and easy to interpret, but lacks flexibility 
+for capturing complex relationships.
 
-Gradient Boosting: Flexible enough to model complex data but harder to interpret without extra tools like feature importance analysis.
+Gradient Boosting: Flexible enough to model complex data but harder to interpret
+without extra tools like feature importance analysis.
 
-GAM: Combines flexibility with decent interpretability, especially through partial dependency plots.
+GAM: Combines flexibility with decent interpretability, especially through 
+partial dependency plots.
 
-Key Takeaways
+**Key Takeaways**
 
-Gradient Boosting is a strong choice for balancing flexibility and accuracy, making it practical for predictions.
+Gradient Boosting is a strong choice for balancing flexibility and accuracy, 
+making it practical for predictions.
 
-GAM is the most accurate and excels at modeling complex relationships, but it needs careful tuning to avoid overfitting.
+GAM is the most accurate and excels at modeling complex relationships, but 
+it needs careful tuning to avoid overfitting.
 
-Linear Regression is a good starting point for understanding basic relationships but doesn’t handle complex data well.
+Linear Regression is a good starting point for understanding basic relationships
+but doesn’t handle complex data well.
 
-Each model has its strengths depending on the need: simplicity (Linear Regression), flexibility and reliability (Gradient Boosting), or detailed nonlinear modeling (GAM).
+Each model has its strengths depending on the need: 
+simplicity (Linear Regression), flexibility and reliability (Gradient Boosting),
+or detailed nonlinear modeling (GAM).
 
 ## 6. Ethical Implications
-The model could show bias if the data favors certain countries, like those with more government spending or higher literacy rates. This might lead to unfair decisions, like giving more resources to already advantaged countries. 
+The model could show bias if the data favors certain countries, like those with
+more government spending or higher literacy rates. This might lead to unfair
+decisions, like giving more resources to already advantaged countries. 
